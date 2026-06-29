@@ -25,6 +25,16 @@ load_dotenv()
 GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")
 MODEL = os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile")
 
+# Curated set of chat-capable Groq models exposed in the UI dropdown.
+# Anything outside this allowlist is rejected and falls back to MODEL.
+MODELS = [
+    {"id": "llama-3.3-70b-versatile", "label": "Llama 3.3 70B", "hint": "Most capable"},
+    {"id": "llama-3.1-8b-instant", "label": "Llama 3.1 8B", "hint": "Fastest"},
+    {"id": "openai/gpt-oss-120b", "label": "GPT-OSS 120B", "hint": "Reasoning"},
+    {"id": "meta-llama/llama-4-scout-17b-16e-instruct", "label": "Llama 4 Scout", "hint": "Balanced"},
+]
+ALLOWED = {m["id"] for m in MODELS}
+
 SYSTEM_INSTRUCTION = (
     "You are an advanced AI assistant. "
     "Respond with precision and clarity. Be concise but complete. "
@@ -56,6 +66,7 @@ class Message(BaseModel):
 
 class ChatRequest(BaseModel):
     messages: List[Message] = Field(..., min_length=1)
+    model: str | None = None
 
 
 def to_groq_messages(messages: List[Message]) -> list[dict]:
@@ -73,6 +84,11 @@ def health() -> dict:
     return {"status": "ok", "model": MODEL, "configured": client is not None}
 
 
+@app.get("/api/models")
+def models() -> dict:
+    return {"models": MODELS, "default": MODEL}
+
+
 @app.post("/api/chat")
 async def chat(req: ChatRequest):
     if client is None:
@@ -82,11 +98,12 @@ async def chat(req: ChatRequest):
         )
 
     payload = to_groq_messages(req.messages)
+    model = req.model if req.model in ALLOWED else MODEL
 
     def event_stream():
         try:
             stream = client.chat.completions.create(
-                model=MODEL,
+                model=model,
                 messages=payload,
                 temperature=0.7,
                 stream=True,

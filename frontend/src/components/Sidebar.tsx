@@ -109,7 +109,7 @@ export default function Sidebar({
             <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400/60" />
             <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-400" />
           </span>
-          <span className="text-[11px] text-muted">llama-3.3-70b · groq · online</span>
+          <span className="text-[11px] text-muted">groq · online</span>
         </div>
       </div>
     </aside>

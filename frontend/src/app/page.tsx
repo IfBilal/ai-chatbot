@@ -2,13 +2,15 @@
 
 import { motion } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
-import { Sparkles, AlertCircle } from "lucide-react";
+import { AlertCircle, RotateCcw } from "lucide-react";
 
 import Sidebar from "@/components/Sidebar";
 import ChatMessage from "@/components/ChatMessage";
 import ChatInput from "@/components/ChatInput";
 import WaveField from "@/components/WaveField";
+import ModelSelector from "@/components/ModelSelector";
 import { useConversations } from "@/lib/useConversations";
+import { useModels } from "@/lib/useModels";
 import { streamChat } from "@/lib/stream";
 import { Message, uid } from "@/lib/types";
 
@@ -32,6 +34,8 @@ export default function Home() {
     updateMessages,
   } = store;
 
+  const { models, selected, current, select } = useModels();
+
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [streamingId, setStreamingId] = useState<string | null>(null);
@@ -39,6 +43,8 @@ export default function Home() {
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const messages = active?.messages ?? [];
+  const canRegenerate =
+    !busy && messages.length >= 2 && messages.some((m) => m.role === "assistant");
 
   useEffect(() => {
     scrollRef.current?.scrollTo({
@@ -47,22 +53,17 @@ export default function Home() {
     });
   }, [messages, streamingId]);
 
-  const send = async (text: string) => {
+  /**
+   * Stream one assistant turn into `convId` given a base history (which must
+   * end on a user turn). Appends a placeholder assistant message and fills it.
+   */
+  const runCompletion = async (
+    convId: string,
+    baseHistory: Pick<Message, "role" | "content">[]
+  ) => {
     setError(null);
-
-    // Ensure we have a conversation to write into.
-    let convId = activeId;
-    if (!convId) convId = newConversation();
-
-    const userMsg: Message = { id: uid(), role: "user", content: text };
     const assistantMsg: Message = { id: uid(), role: "assistant", content: "" };
-
-    updateMessages(convId, (msgs) => [...msgs, userMsg, assistantMsg]);
-
-    const history = [...messages, userMsg].map((m) => ({
-      role: m.role,
-      content: m.content,
-    }));
+    updateMessages(convId, (msgs) => [...msgs, assistantMsg]);
 
     const controller = new AbortController();
     abortRef.current = controller;
@@ -71,7 +72,7 @@ export default function Home() {
 
     try {
       let acc = "";
-      for await (const delta of streamChat(history, controller.signal)) {
+      for await (const delta of streamChat(baseHistory, selected, controller.signal)) {
         acc += delta;
         updateMessages(convId, (msgs) =>
           msgs.map((m) => (m.id === assistantMsg.id ? { ...m, content: acc } : m))
@@ -99,6 +100,34 @@ export default function Home() {
       setStreamingId(null);
       abortRef.current = null;
     }
+  };
+
+  const send = async (text: string) => {
+    let convId = activeId;
+    if (!convId) convId = newConversation();
+
+    const userMsg: Message = { id: uid(), role: "user", content: text };
+    updateMessages(convId, (msgs) => [...msgs, userMsg]);
+
+    const history = [...messages, userMsg].map((m) => ({
+      role: m.role,
+      content: m.content,
+    }));
+    await runCompletion(convId, history);
+  };
+
+  /** Re-run the latest user turn, discarding everything after it. */
+  const regenerate = async () => {
+    if (!activeId || busy) return;
+    const lastUser = [...messages].reverse().findIndex((m) => m.role === "user");
+    if (lastUser === -1) return;
+    const cut = messages.length - 1 - lastUser; // index of last user msg
+    const history = messages
+      .slice(0, cut + 1)
+      .map((m) => ({ role: m.role, content: m.content }));
+
+    updateMessages(activeId, (msgs) => msgs.slice(0, cut + 1));
+    await runCompletion(activeId, history);
   };
 
   const stop = () => {
@@ -140,9 +169,23 @@ export default function Home() {
               </span>
               <span className="label">{messages.length} turns</span>
             </div>
-            <div className="flex items-center gap-1.5 text-muted">
-              <Sparkles className="h-3.5 w-3.5" />
-              <span className="text-[11px]">Streaming</span>
+            <div className="flex items-center gap-2.5">
+              <button
+                onClick={regenerate}
+                disabled={!canRegenerate}
+                className="flex items-center gap-1.5 rounded-btn border border-white/10 bg-white/[0.03] px-3 py-1.5 text-[12px] font-medium text-secondary transition-colors hover:border-white/20 hover:text-primary disabled:cursor-not-allowed disabled:opacity-40"
+                title="Regenerate last response"
+              >
+                <RotateCcw className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">Regenerate</span>
+              </button>
+              <ModelSelector
+                models={models}
+                selected={selected}
+                current={current}
+                onSelect={select}
+                disabled={busy}
+              />
             </div>
           </motion.header>
 
