@@ -1,0 +1,122 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --accent-glow: rgba(59, 130, 246, 0.4);
+}
+
+* {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+html,
+body {
+  height: 100%;
+  background: #000000;
+  color: #ffffff;
+  /* SF-like rendering from Inter */
+  font-feature-settings: "ss01", "cv01", "cv03", "cv04", "calt", "liga";
+  letter-spacing: -0.011em;
+  overflow: hidden;
+}
+
+::selection {
+  background: rgba(255, 255, 255, 0.16);
+  color: #ffffff;
+}
+
+/* Thin architectural scrollbars */
+.scroll-thin::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+.scroll-thin::-webkit-scrollbar-track {
+  background: transparent;
+}
+.scroll-thin::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 999px;
+}
+.scroll-thin::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.16);
+}
+
+/* Uppercase micro-labels (Palantir style) */
+.label {
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 10px;
+  font-weight: 500;
+  color: #52525b;
+}
+
+/* Faint blueprint grid — monochrome, never gradient-y */
+.blueprint-grid {
+  background-image: linear-gradient(rgba(255, 255, 255, 0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.025) 1px, transparent 1px);
+  background-size: 64px 64px;
+}
+
+/* Markdown-ish prose for assistant messages */
+.prose-terminal {
+  font-size: 15px;
+  line-height: 1.7;
+  color: #e4e4e7;
+}
+.prose-terminal p {
+  margin: 0 0 0.85em;
+}
+.prose-terminal p:last-child {
+  margin-bottom: 0;
+}
+.prose-terminal strong {
+  color: #ffffff;
+  font-weight: 600;
+}
+.prose-terminal ul,
+.prose-terminal ol {
+  margin: 0 0 0.85em;
+  padding-left: 1.25em;
+}
+.prose-terminal li {
+  margin: 0.2em 0;
+}
+.prose-terminal code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.86em;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 0.1em 0.38em;
+  border-radius: 5px;
+  color: #d4d4d8;
+}
+.prose-terminal pre {
+  background: #0a0a0a;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 14px 16px;
+  overflow-x: auto;
+  margin: 0 0 0.85em;
+}
+.prose-terminal pre code {
+  background: transparent;
+  border: none;
+  padding: 0;
+  font-size: 13px;
+  line-height: 1.6;
+}
+.prose-terminal h1,
+.prose-terminal h2,
+.prose-terminal h3 {
+  color: #ffffff;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  margin: 1.1em 0 0.5em;
+}
+.prose-terminal a {
+  color: #60a5fa;
+  text-decoration: none;
+  border-bottom: 1px solid rgba(96, 165, 250, 0.3);
+}
